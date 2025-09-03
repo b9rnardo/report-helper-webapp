@@ -63,7 +63,7 @@ export default function App() {
         if (Number.isNaN(valorVendaNum) || Number.isNaN(comissaoNum)) continue;
 
         const centavos = Math.round((valorVendaNum - Math.floor(valorVendaNum)) * 100);
-        if (centavos >= codeToUse - 2 && centavos <= codeToUse) {
+        if (centavos >= codeToUse - 2 && centavos <= codeToUse + 2) {
           total += comissaoNum;
           matched.push({
             colunaJ: cellVal(r, 9) ?? "",
