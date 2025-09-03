@@ -1,0 +1,183 @@
+body {
+  font-family: 'Roboto Mono', monospace;
+  /* mantém suas outras propriedades existentes */
+}
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --highlight: #ff9900;
+  --highlight-light: #ffb74d;
+  --bg-table: #1e1e1e;
+  --bg-card: #2a2a2a;
+  --text-primary: #e0e0e0;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #242424;
+  color: var(--text-primary);
+}
+
+h1, h3 {
+  color: var(--highlight);
+  text-align: center;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  color: var(--highlight);
+  text-align: center;
+  margin-bottom: 0.5em;
+  font-size: 2em;       /* aumenta o tamanho do texto */
+  font-weight: 700;     /* deixa mais grosso */
+}
+
+.container {
+  max-width: 900px;
+  width: 90%;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info {
+  margin-top: 16px;
+  text-align: center;
+  width: 100%;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+.radio-group label {
+  margin: 4px 10px;
+  font-weight: bold;
+}
+
+/* Botões */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Table Header com botão alinhado */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 12px;
+  margin-bottom: 8px; /* espaço entre header e tabela */
+}
+.table-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+.table-header button {
+  margin-top: 0;
+  background-color: var(--highlight);
+  color: #121212;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
+}
+.table-header button:hover {
+  background-color: #e68a00;
+}
+
+/* Tabela com altura fixa e scroll interno */
+.table-container {
+  width: 100%;
+  max-height: 205px; /* altura pequena fixa */
+  overflow-y: auto; /* scroll apenas na tabela */
+  border-radius: 12px;
+  background-color: var(--bg-table);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  padding: 0;
+}
+
+/* Tabela interna */
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Cabeçalho fixo */
+.table-container th {
+  position: sticky;
+  top: 0;
+  background-color: var(--highlight);
+  color: #121212;
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+  z-index: 2;
+}
+
+/* Células */
+.table-container td {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+  background-color: var(--bg-table);
+}
+
+/* Linha hover */
+.table-container tr:hover td {
+  background-color: #3a3a3a;
+}
+
+/* Remove outline estranho do scroll */
+.table-container:focus {
+  outline: none;
+}
+
+/* Lista de salvos */
+ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+ul li {
+  background: var(--bg-card);
+  margin: 4px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  transition: background 0.3s;
+}
+ul li:hover {
+  background: #3a3a3a;
+}
+
