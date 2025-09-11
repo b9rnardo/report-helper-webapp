@@ -186,7 +186,7 @@ export default function App() {
           {somaSalvos.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           <br />
           <strong>Comissão estimada:</strong>{" "}
-          {(somaSalvos * 0.2).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {(somaSalvos * 0.15).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       )}
 
