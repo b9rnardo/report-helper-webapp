@@ -13,14 +13,15 @@ export default function App() {
   const [somaSalvos, setSomaSalvos] = useState(0);
   const [modeloAtual, setModeloAtual] = useState("");
   const [showLinhas, setShowLinhas] = useState(true);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [keySequence, setKeySequence] = useState([]);
+  const [globaisFeed, setGlobaisFeed] = useState(false);
 
   const parseBrazilNumber = (v) => {
     if (v === null || v === undefined || v === "") return NaN;
     if (typeof v === "number") return v;
     let s = String(v).trim();
-    if (s.includes(",")) {
-      s = s.replace(/\./g, "").replace(",", ".");
-    }
+    if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
     return parseFloat(s);
   };
 
@@ -32,13 +33,16 @@ export default function App() {
       const normalized = parsed
         .map((item) => {
           if (typeof item === "number") return { valor: Number(item), modelo: "" };
-          if (item && typeof item === "object") return { valor: Number(item.valor ?? 0), modelo: String(item.modelo ?? "") };
+          if (item && typeof item === "object")
+            return { valor: Number(item.valor ?? 0), modelo: String(item.modelo ?? "") };
           return null;
         })
         .filter(Boolean)
         .filter((it) => !Number.isNaN(it.valor));
       setSavedTotals(normalized);
-    } catch { setSavedTotals([]); }
+    } catch {
+      setSavedTotals([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -46,7 +50,22 @@ export default function App() {
     setSomaSalvos(Number(total.toFixed(2)));
   }, [savedTotals]);
 
-  const processFile = (buffer, codeToUse = selectedCode) => {
+  // Atalho "admin"
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key.toLowerCase();
+      const newSeq = [...keySequence, key].slice(-5);
+      setKeySequence(newSeq);
+      if (newSeq.join("") === "admin") {
+        setShowAdmin((prev) => !prev);
+        setKeySequence([]);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [keySequence]);
+
+  const processFile = (buffer, codeToUse = selectedCode, globaisAtivo = globaisFeed) => {
     try {
       const workbook = XLSX.read(buffer, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -60,10 +79,25 @@ export default function App() {
       for (let r = range.s.r + 1; r <= range.e.r; r++) {
         const valorVendaNum = parseBrazilNumber(cellVal(r, 2));
         const comissaoNum = parseBrazilNumber(cellVal(r, 3));
+        const colunaENome = String(cellVal(r, 4)).trim();
         if (Number.isNaN(valorVendaNum) || Number.isNaN(comissaoNum)) continue;
 
         const centavos = Math.round((valorVendaNum - Math.floor(valorVendaNum)) * 100);
-        if (centavos >= codeToUse - 3 && centavos <= codeToUse + 3) {
+        let match = false;
+
+        if (globaisAtivo) {
+          const is00 = (centavos >= 97 || centavos <= 3) && colunaENome === "Postagem";
+          const is90 = centavos >= 87 && centavos <= 93;
+          match = is00 || is90;
+        } else {
+          if (codeToUse === 0) {
+            match = (centavos >= 97 || centavos <= 3) && colunaENome === "Postagem";
+          } else {
+            match = centavos >= codeToUse - 3 && centavos <= codeToUse + 3;
+          }
+        }
+
+        if (match) {
           total += comissaoNum;
           matched.push({
             colunaJ: cellVal(r, 9) ?? "",
@@ -111,8 +145,15 @@ export default function App() {
   };
 
   const handleCodeChange = (code) => {
+    setGlobaisFeed(false);
     setSelectedCode(code);
-    if (fileBuffer) processFile(fileBuffer, code);
+    if (fileBuffer) processFile(fileBuffer, code, false);
+  };
+
+  const handleGlobaisToggle = () => {
+    const novoValor = !globaisFeed;
+    setGlobaisFeed(novoValor);
+    if (fileBuffer) processFile(fileBuffer, selectedCode, novoValor);
   };
 
   const salvarTotal = () => {
@@ -123,7 +164,7 @@ export default function App() {
       alert("Esse par (valor + modelo) já está salvo.");
       return;
     }
-    const novos = [...savedTotals, { valor, modelo }];
+    const novos = [...savedTotals, { valor, modelo, globais: globaisFeed }];
     setSavedTotals(novos);
     localStorage.setItem("totaisSalvos", JSON.stringify(novos));
   };
@@ -135,7 +176,7 @@ export default function App() {
     localStorage.removeItem("totaisSalvos");
   };
 
-  const codes = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  const codes = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
 
   return (
     <motion.div
@@ -144,32 +185,66 @@ export default function App() {
       animate={{ opacity: 1 }}
       transition={{ duration: 1, ease: "easeInOut" }}
     >
-      <h1>Report Helper</h1>
+      <h1 className={showAdmin ? "rainbow-text" : ""}>Report Helper</h1>
       <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
 
       <div className="info">
         <strong>Código de Vendedor:</strong>
         <div className="radio-group">
           {codes.map((code) => (
-            <label key={code}>
-              <input type="radio" name="centCode" checked={selectedCode === code} onChange={() => handleCodeChange(code)} /> {code}
+            <label
+              key={code}
+              className={showAdmin ? "rainbow-bg" : ""}
+              style={{ marginRight: 6 }}
+            >
+              <input
+                type="radio"
+                name="centCode"
+                checked={selectedCode === code && !globaisFeed}
+                onChange={() => handleCodeChange(code)}
+              />
+              {code.toString().padStart(2, "0")}
             </label>
           ))}
+
+          {showAdmin && (
+            <label className={globaisFeed ? "rainbow-bg" : ""} style={{ marginLeft: 10 }}>
+              <input
+                type="checkbox"
+                checked={globaisFeed}
+                onChange={handleGlobaisToggle}
+                style={{ marginRight: 4 }}
+              />
+              Globais + Feed
+            </label>
+          )}
         </div>
       </div>
 
       <div className="info">
         <strong>Total de vendas:</strong>{" "}
-        {soma.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+        {soma.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{" "}
         {modeloAtual && <span>({modeloAtual})</span>}
       </div>
+
       <div className="info">
         <strong>Quantidade de vendas:</strong> {count}
       </div>
 
       <div className="info">
-        <button onClick={salvarTotal}>Salvar total em memória</button>
-        <button style={{ marginLeft: 10 }} onClick={limparSalvos}>Limpar salvos</button>
+        <button
+          className={showAdmin ? "rainbow-bg" : ""}
+          onClick={salvarTotal}
+        >
+          Salvar total em memória
+        </button>
+        <button
+          className={showAdmin ? "rainbow-bg" : ""}
+          style={{ marginLeft: 10 }}
+          onClick={limparSalvos}
+        >
+          Limpar salvos
+        </button>
       </div>
 
       {savedTotals.length > 0 && (
@@ -178,15 +253,20 @@ export default function App() {
           <ul>
             {savedTotals.map((item, i) => (
               <li key={i}>
-                {item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} — {item.modelo || "(sem modelo)"}
+                {item.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} —{" "}
+                {item.modelo || "(sem modelo)"}
               </li>
             ))}
           </ul>
           <strong>Soma dos salvos:</strong>{" "}
-          {somaSalvos.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {somaSalvos.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
           <br />
           <strong>Comissão estimada:</strong>{" "}
-          {(somaSalvos * 0.15).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {(somaSalvos * (globaisFeed ? 0.025 : 0.15)).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{" "}
+          ({globaisFeed ? "2,5%" : "15%"})
         </div>
       )}
 
@@ -194,7 +274,10 @@ export default function App() {
         <div style={{ width: "100%" }}>
           <div className="table-header">
             <h3>Resumo do relatório</h3>
-            <button onClick={() => setShowLinhas(!showLinhas)}>
+            <button
+              className={showAdmin ? "rainbow-bg" : ""}
+              onClick={() => setShowLinhas(!showLinhas)}
+            >
               {showLinhas ? "▲" : "▼"}
             </button>
           </div>
@@ -223,9 +306,19 @@ export default function App() {
                       <tr key={idx}>
                         <td>{r.colunaJ}</td>
                         <td>{r.colunaH}</td>
-                        <td>{r.valorVenda.toLocaleString("pt-BR", { minimumFractionDigits: r.valorVenda % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}</td>
+                        <td>
+                          {r.valorVenda.toLocaleString("pt-BR", {
+                            minimumFractionDigits: r.valorVenda % 1 === 0 ? 0 : 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
                         <td>{r.centavos.toFixed(2).replace(".", ",")}</td>
-                        <td>{r.comissao.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>
+                          {r.comissao.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,6 +328,23 @@ export default function App() {
           </AnimatePresence>
         </div>
       )}
+
+      <AnimatePresence>
+        {showAdmin && (
+          <motion.div
+            className="admin-section"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.5 }}
+            style={{ marginTop: 40, padding: 20, background: "#222", color: "#fff", borderRadius: 12 }}
+          >
+            <h2>Seção Secreta 🕵️‍♂️</h2>
+            <p>Bem-vindo, Manager. Você desbloqueou o modo oculto.</p>
+            <button onClick={() => setShowAdmin(false)}>Fechar</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
