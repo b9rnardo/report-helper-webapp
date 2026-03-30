@@ -50,6 +50,7 @@ export default function App() {
     setSomaSalvos(Number(total.toFixed(2)));
   }, [savedTotals]);
 
+  // Atalho "admin"
   useEffect(() => {
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
@@ -76,37 +77,10 @@ export default function App() {
       const cellVal = (r, c) => sheet[XLSX.utils.encode_cell({ r, c })]?.v ?? "";
 
       for (let r = range.s.r + 1; r <= range.e.r; r++) {
-        let valorVendaNum = parseBrazilNumber(cellVal(r, 2));
+        const valorVendaNum = parseBrazilNumber(cellVal(r, 2));
         const comissaoNum = parseBrazilNumber(cellVal(r, 3));
-        const colunaENome = String(cellVal(r, 4)).trim(); 
-        const colunaI = String(cellVal(r, 8)).trim(); 
-        const colunaA = cellVal(r, 0); 
-
+        const colunaENome = String(cellVal(r, 4)).trim();
         if (Number.isNaN(valorVendaNum) || Number.isNaN(comissaoNum)) continue;
-
-
-        let dataVenda = null;
-        if (colunaA) {
-          if (colunaA instanceof Date) {
-            dataVenda = colunaA;
-          } else if (typeof colunaA === "number") {
-            dataVenda = new Date(Date.UTC(1900, 0, colunaA - 1));
-          } else if (typeof colunaA === "string") {
-            const parts = colunaA.split("/");
-            if (parts.length === 3) {
-              const dia = parseInt(parts[0], 10);
-              const mes = parseInt(parts[1], 10) - 1;
-              const ano = parseInt(parts[2], 10);
-              dataVenda = new Date(ano, mes, dia);
-            }
-          }
-        }
-
-        const dataLimite = new Date(2025, 9, 15);   
-        const isDepois = dataVenda && dataVenda > dataLimite;
-
-        const isInternacional = colunaI.toLowerCase() === "internacional" && colunaENome.toLowerCase() === "chat" && isDepois;
-        if (isInternacional) valorVendaNum = valorVendaNum / 1.10;
 
         const centavos = Math.round((valorVendaNum - Math.floor(valorVendaNum)) * 100);
         let match = false;
@@ -131,7 +105,6 @@ export default function App() {
             valorVenda: valorVendaNum,
             centavos: centavos / 100,
             comissao: comissaoNum,
-            internacional: isInternacional,
           });
         }
       }
@@ -337,8 +310,7 @@ export default function App() {
                           {r.valorVenda.toLocaleString("pt-BR", {
                             minimumFractionDigits: r.valorVenda % 1 === 0 ? 0 : 2,
                             maximumFractionDigits: 2,
-                          })}{" "}
-                          {r.internacional && <span style={{ color: "orange" }}>(Internacional)</span>}
+                          })}
                         </td>
                         <td>{r.centavos.toFixed(2).replace(".", ",")}</td>
                         <td>
@@ -367,7 +339,9 @@ export default function App() {
             transition={{ duration: 0.5 }}
             style={{ marginTop: 40, padding: 20, background: "#222", color: "#fff", borderRadius: 12 }}
           >
-            <h2>Manager Mode</h2>
+            <h2>Seção Secreta 🕵️‍♂️</h2>
+            <p>Bem-vindo, Manager. Você desbloqueou o modo oculto.</p>
+            <button onClick={() => setShowAdmin(false)}>Fechar</button>
           </motion.div>
         )}
       </AnimatePresence>
